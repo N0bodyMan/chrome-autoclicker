@@ -1,33 +1,26 @@
-let intervalId;
-
-document.getElementById('start').addEventListener('click', async () => {
-    const interval = parseInt(document.getElementById('interval').value);
-
-    let [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-
-    chrome.scripting.executeScript({
-        target: {tabId: tab.id},
-        func: startClicking,
-        args: [interval]
-    });
-});
-
-document.getElementById('stop').addEventListener('click', async () => {
-    let [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-
-    chrome.scripting.executeScript({
-        target: {tabId: tab.id},
-        func: stopClicking
-    });
-});
-
-function startClicking(interval) {
-    window.autoClickerInterval = setInterval(() => {
-        const clickEvent = new MouseEvent('click', {bubbles: true});
-        document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2).dispatchEvent(clickEvent);
-    }, interval);
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function stopClicking() {
-    clearInterval(window.autoClickerInterval);
+function startClicking(interval, selector) {
+  if (window.__autoClickerRunning) clearInterval(window.__autoClickerRunning);
+
+  window.__autoClickerRunning = setInterval(() => {
+    try {
+      if (selector) {
+        const el = document.querySelector(selector);
+        if (el) el.click();
+      } else {
+        // выбираем случайные координаты в пределах окна
+        const x = randomInt(0, window.innerWidth);
+        const y = randomInt(0, window.innerHeight);
+
+        const ev = new MouseEvent('click', {bubbles: true, cancelable: true, view: window});
+        const el = document.elementFromPoint(x, y);
+        if (el) el.dispatchEvent(ev);
+      }
+    } catch (e) {
+      console.error('autoclicker:', e);
+    }
+  }, interval);
 }
